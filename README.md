@@ -7,6 +7,8 @@ This is the vanilla variant — it's the exact output of `npx create-next-app@la
 > Looking for the variant with Cloudflare bindings (D1, R2, KV)?
 > See [`hello-world-next-app-bindings`](https://github.com/Webflow-Examples/hello-world-next-app-bindings).
 
+[![Deploy to Webflow](https://webflow.com/img/deploy-dark.svg)](https://webflow.com/dashboard/cloud/deploy?repo=https://github.com/Webflow-Examples/hello-world-next-app)
+
 ## Quickstart
 
 ```bash
