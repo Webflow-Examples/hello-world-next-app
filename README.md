@@ -104,3 +104,28 @@ under the `wf-*` prefix.
 ---
 
 Built with Next.js · Deployed on Webflow Cloud.
+
+## Branch naming convention
+
+This repo is the canonical `hello-world-<framework>-app` example. Every framework
+version and variant lives on a branch here, not in a separate repo:
+
+| Branch | Contents |
+| --- | --- |
+| `main` | Current default example. Advances to the latest framework version once dependent pipelines are updated. |
+| `vN` | Framework major version N, no storage bindings (for example `v6`). |
+| `vN-with-bindings` | Version N plus D1, R2, and KV bindings and a `/api/binding-status` health check. |
+| `sentry` | Latest version with bindings, plus a working Sentry setup. |
+
+### Adding a new framework version
+
+When a new major version M ships:
+
+1. Create `vM` from the new plain app and `vM-with-bindings` from its bindings variant.
+2. Point `sentry` at the latest version with bindings.
+3. Leave `main` until the pipelines that consume this repo (webflow-cli,
+   infrastructure/cosmic-builder, cosmic-test) are updated, then advance `main` to `vM`.
+4. Keep older `vN` / `vN-with-bindings` branches so pinned references keep working.
+
+Version branches (`vN`, `vN-with-bindings`, `sentry`) are protected: they can't be
+deleted or force-pushed.
