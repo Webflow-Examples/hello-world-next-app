@@ -135,3 +135,29 @@ test.describe('skip to content', () => {
     });
   }
 });
+
+test.describe('homepage content', () => {
+  /**
+   * The page's only line, asserted in the served response rather than the DOM for the same
+   * reason the rest of this file is: a heading that only appears after hydration reaches a
+   * crawler as an empty page.
+   *
+   * `/us` is absent on purpose - it is a gated locale with no translation of its own, so what
+   * it serves is the English fallback and proves nothing this pair does not already prove.
+   */
+  const EXPECTED_HEADINGS: Array<[string, string]> = [
+    ['/', 'Home'],
+    ['/de', 'Startseite'],
+  ];
+
+  for (const [path, heading] of EXPECTED_HEADINGS) {
+    test(`${path} serves its localised <h1>`, async ({ request }) => {
+      const html = await (await request.get(path)).text();
+
+      // Counted: exactly one <h1> per document is what the heading outline requires, and a
+      // containment check would pass with two.
+      expect(html.match(/<h1[\s>]/g) ?? []).toHaveLength(1);
+      expect(html).toMatch(new RegExp(`<h1[^>]*>${heading}</h1>`));
+    });
+  }
+});
