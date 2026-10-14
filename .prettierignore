@@ -1,0 +1,27 @@
+.next
+out
+build
+coverage
+playwright-report
+test-results
+node_modules
+package-lock.json
+
+# The specification. Every one of these files quotes claim-surface text verbatim, transcribed
+# from the estimate spreadsheets. Reformatting is not worth the risk of touching reviewed
+# wording.
+docs/spec
+
+# Accelerator-owned payload, verified against the SHA-256 receipt in
+# .frontend-accelerator/installation.json. Reformatting any of it makes
+# `frontend-accelerator update` report a conflict and refuse to write.
+.agents
+.claude
+.codex
+rulesets
+toolchain
+.frontend-accelerator
+workflow
+# Webflow Cloud build output - generated, never ours to format.
+.open-next
+.wrangler

@@ -32,8 +32,28 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
+# vercel
+.vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# agent runtime
+.claude/settings.local.json
+.playwright-mcp/
+
+# testing
+/playwright-report
+/test-results
+/.playwright
+
+# lighthouse
+/.lighthouse
+/.lighthouseci
+
+# webflow cloud / cloudflare workers build output
+/.open-next/
+/.wrangler/

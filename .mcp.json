@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "node",
+      "args": ["node_modules/@playwright/mcp/cli.js", "--browser", "chromium"]
+    },
+    "mantine": {
+      "command": "npx",
+      "args": ["-y", "@mantine/mcp-server@9.7.1"]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@1.10.1"]
+    }
+  }
+}

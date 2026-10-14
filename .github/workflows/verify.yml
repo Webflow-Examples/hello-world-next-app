@@ -1,0 +1,115 @@
+# CI for the GitHub remote.
+#
+# This mirrors bitbucket-pipelines.yml, with one deliberate difference: the served-HTML job
+# runs against the Cloudflare Workers build, not against `next start`.
+#
+# That difference is the whole point. Webflow Cloud deploys this application through the
+# OpenNext adapter onto the Workers runtime, and the two runtimes do not agree. A build has
+# already passed `npm run verify` and `next start` in this repository while every route on
+# Workers answered 500 - twice, for two unrelated reasons (docs/adr/0005, docs/adr/0006).
+# Verifying only the Node build would certify exactly the thing that was broken.
+#
+# A push to a branch Webflow Cloud is tracking is a deployment, so this gate runs on pushes as
+# well as on pull requests.
+
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches: ['main']
+
+# A new push supersedes the run in flight for the same ref: the older result is about code
+# nobody is going to deploy.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify - lint, typecheck, unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          # Matches the accelerator's requirement in toolchain/manifest.json. Webflow Cloud
+          # requires Node 22 or later; 24 satisfies both.
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+
+  served-html:
+    name: Served HTML on the Workers runtime
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # Builds through the adapter rather than `next build`. This is the artifact Webflow
+      # Cloud serves.
+      - run: npm run build:workers
+
+      - name: Serve the worker
+        run: npm run preview:workers &
+
+      # No wait-on dependency; poll the server the same way the local run does. workerd takes
+      # longer to come up than `next start`, hence the generous ceiling.
+      - name: Wait for the worker
+        run: timeout 180 sh -c 'until curl -sf -o /dev/null http://127.0.0.1:3123/; do sleep 2; done'
+
+      # Playwright reads raw responses through its request fixture, so no browser binary is
+      # needed here. E2E_BASE_URL makes the config skip its own webServer and reuse the one
+      # above.
+      - name: Served-HTML, SEO artefacts and locale routing
+        run: npx playwright test
+        env:
+          E2E_BASE_URL: http://127.0.0.1:3123
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  lighthouse:
+    name: Core Web Vitals budgets
+    runs-on: ubuntu-latest
+    # Runs after the fast gate, as in bitbucket-pipelines.yml: there is no point measuring a
+    # build that does not serve.
+    needs: [verify, served-html]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      # Chromium is needed here, unlike the served-HTML job: Lighthouse drives a browser.
+      - run: npx playwright install --with-deps chromium
+
+      # Lab metrics only. INP is a field metric, so .lighthouserc.json asserts on total
+      # blocking time instead; acceptance stays on CrUX field data, per WS-D. lhci starts and
+      # stops the server itself through startServerCommand.
+      #
+      # NOTE: this measures the Node build. Webflow Cloud replaces every response
+      # Cache-Control with `private, no-cache`, so production TTFB is Worker cold start plus
+      # render and these numbers do not predict it. Acceptance is measured on a deployed
+      # environment; this job guards against regressions in what we control.
+      - run: npx --yes @lhci/cli@0.15.1 autorun
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse
+          path: .lighthouse/
+          retention-days: 7

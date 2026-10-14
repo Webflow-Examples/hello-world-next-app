@@ -1,0 +1,17 @@
+# Normalize all text to LF in the repository. Matches the accelerator toolset's own policy,
+# so payload files and project files do not disagree on line endings.
+* text=auto eol=lf
+
+*.xlsx binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.mp4 binary
+*.webm binary
+*.pdf binary
