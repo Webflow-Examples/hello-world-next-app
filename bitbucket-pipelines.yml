@@ -1,0 +1,83 @@
+# Bitbucket Pipelines
+#
+# The gate is `npm run verify` - the same command a developer runs locally, so CI and a working
+# machine cannot disagree about what passing means. A check CI runs that nobody can reproduce
+# locally is a trap; a check a developer runs that CI skips is theatre.
+#
+# Node 24 matches the accelerator's requirement in `toolchain/manifest.json` rather than
+# whatever a developer happens to have installed.
+
+image: node:24
+
+definitions:
+  caches:
+    playwright: /root/.cache/ms-playwright
+
+  steps:
+    - step: &verify
+        name: Verify - lint, typecheck, unit tests
+        caches:
+          - node
+        script:
+          - npm ci
+          - npm run verify
+
+    - step: &served-html
+        name: Served HTML, SEO artefacts and locale routing
+        caches:
+          - node
+        script:
+          # Builds here rather than consuming a `.next` artifact from another step: the build
+          # is seconds, and passing `.next` between steps drags its cache directory along and
+          # couples the two steps for no gain.
+          - npm ci
+          - npm run build
+          - npx next start --port 3123 &
+          # No wait-on dependency; poll the server the same way the local run does.
+          - timeout 120 sh -c 'until wget -q -O /dev/null http://localhost:3123/; do sleep 1; done'
+          # Playwright reads raw responses through its request fixture, so no browser binary is
+          # needed here. WS-D requires verification "in served HTML, not in the rendered DOM",
+          # and the development server does not reproduce prerendering faithfully.
+          # E2E_BASE_URL makes the config skip its own webServer and reuse the one above.
+          - E2E_BASE_URL=http://localhost:3123 npx playwright test
+        artifacts:
+          - playwright-report/**
+          - test-results/**
+
+    - step: &lighthouse
+        name: Core Web Vitals budgets
+        caches:
+          - node
+          - playwright
+        script:
+          - npm ci
+          - npm run build
+          # Chromium is needed here, unlike the served-HTML step: Lighthouse drives a browser.
+          - npx playwright install --with-deps chromium
+          # Lab metrics only. INP is a field metric, so `.lighthouserc.json` asserts on total
+          # blocking time instead; acceptance stays on CrUX field data, per WS-D. lhci starts
+          # and stops the server itself through `startServerCommand`.
+          - npx --yes @lhci/cli@0.15.1 autorun
+        artifacts:
+          - .lighthouse/**
+
+pipelines:
+  pull-requests:
+    '**':
+      - parallel:
+          - step: *verify
+          - step: *served-html
+      - step: *lighthouse
+
+  branches:
+    main:
+      - parallel:
+          - step: *verify
+          - step: *served-html
+      - step: *lighthouse
+
+  # A branch pushed without a pull request still gets the fast gate.
+  default:
+    - parallel:
+        - step: *verify
+        - step: *served-html

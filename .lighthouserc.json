@@ -1,0 +1,40 @@
+{
+  "ci": {
+    "collect": {
+      "startServerCommand": "npx next start --port 3210",
+      "url": ["http://localhost:3210/", "http://localhost:3210/de", "http://localhost:3210/us"],
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "desktop"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.9 }],
+        "categories:accessibility": ["error", { "minScore": 1 }],
+        "categories:best-practices": ["warn", { "minScore": 0.9 }],
+
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
+        "total-blocking-time": ["error", { "maxNumericValue": 200 }],
+
+        "total-byte-weight": ["warn", { "maxNumericValue": 1600000 }],
+        "unused-javascript": ["warn", { "maxNumericValue": 100000 }],
+
+        "http-status-code": "error",
+        "crawlable-anchors": "error",
+        "hreflang": "error",
+        "canonical": "error",
+        "document-title": "error",
+        "link-text": "warn",
+
+        "is-crawlable": "off",
+        "meta-description": "off"
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": ".lighthouse"
+    }
+  }
+}

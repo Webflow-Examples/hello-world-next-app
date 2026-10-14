@@ -1,0 +1,88 @@
+/*
+ * Styles for the skip link and the main landmark.
+ *
+ * WHY EVERY SELECTOR HERE IS A SINGLE PROJECT CLASS
+ *
+ * Next 16 builds with Turbopack, where `cssChunking` supports only `true` and `'graph'`
+ * (`'strict'` and `false` are webpack-only), and the Next CSS guide states outright that CSS
+ * order can differ between `next dev` and `next build`. So cascade ORDER is not something this
+ * file may depend on. It depends on SPECIFICITY instead: every rule below is scoped to one
+ * CSS-Module class, which is hashed at build time and therefore cannot collide with, or tie
+ * against, anything in `@mantine/core/styles.css`.
+ *
+ * Consequently there is deliberately no bare `a {}`, no `main {}` and no element-level
+ * `:focus {}` in this file. Any of those could tie on specificity with a Mantine global and
+ * the winner would then depend on emitted order - the one thing we cannot pin.
+ *
+ * Colours, spacing, radii and font sizes come from Mantine CSS variables rather than literals,
+ * per the token rule in `src/shared/theme/theme.ts`. The WS-C palette is still a TODO skeleton;
+ * when it lands these follow it automatically.
+ */
+
+/*
+ * Hidden state.
+ *
+ * The link is moved out of sight with `top` + `transform`. It is NOT hidden with
+ * `display: none` or `visibility: hidden` - both remove the element from the tab order, which
+ * destroys the only thing a skip link exists to do. It is also not moved with `left: -9999px`:
+ * that risks horizontal overflow and is simply the wrong direction under RTL.
+ *
+ * There is no `transition`. A transition here would require a `prefers-reduced-motion` branch
+ * and buys nothing: the link must be usable the instant it takes focus.
+ *
+ * `position: absolute` is correct TODAY because this link is the first tab stop and the page
+ * is at scroll top when it is reached. The moment a sticky or fixed header is added (FE-04 /
+ * FE-05, both blocked), this must become `position: fixed`, or the link will scroll away with
+ * the document on a page that was not at the top.
+ */
+.skipLink {
+  position: absolute;
+  top: var(--mantine-spacing-sm);
+  inset-inline-start: var(--mantine-spacing-sm);
+  z-index: var(--mantine-z-index-max);
+
+  /* Up and fully off-screen, while staying focusable. */
+  transform: translateY(calc(-100% - var(--mantine-spacing-xl)));
+
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+
+  /*
+   * TODO(WS-C): measured in a real browser, this border is 1.49:1 against the page in light
+   * and 1.54:1 in dark, and the panel's background is the page background, so the border
+   * contributes nothing visually. What actually delimits the revealed link is the 2px focus
+   * outline below, measured at 21:1 and 9.37:1, which is always present while the link is
+   * visible - so WCAG 2.1 AA 1.4.11 is satisfied today. Give the link a real surface colour
+   * when the palette lands, and re-measure.
+   */
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+  background-color: var(--mantine-color-body);
+  color: var(--mantine-color-text);
+  font-size: var(--mantine-font-size-sm);
+  text-decoration: underline;
+}
+
+.skipLink:focus {
+  transform: none;
+
+  /*
+   * `--mantine-color-text` rather than `--mantine-primary-color-filled`: the primary colour is
+   * an unresolved TODO(WS-C) and the guardrail forbids assuming a default shade clears
+   * contrast. Body text colour is the highest-contrast value the scheme defines in either
+   * colour mode, so this indicator passes WCAG 2.1 AA 1.4.11 without needing a measurement
+   * that the palette would invalidate next week.
+   */
+  outline: 2px solid var(--mantine-color-text);
+  outline-offset: 2px;
+}
+
+/*
+ * `tabIndex={-1}` on the main landmark is what makes the fragment move KEYBOARD FOCUS and not just
+ * scroll position. Its side effect is that several browsers paint a focus ring when the
+ * landmark is CLICKED. Suppress that case only - `:focus:not(:focus-visible)` - on this one
+ * class. Never a blanket `main:focus { outline: none }`: that would also remove the ring the
+ * skip link itself depends on to show the user where they landed.
+ */
+.mainLandmark:focus:not(:focus-visible) {
+  outline: none;
+}
