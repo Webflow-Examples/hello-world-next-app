@@ -74,7 +74,7 @@ export default function Home() {
             </a>
             <a
               className="wf-btn wf-btn-ghost"
-              href="https://github.com/Webflow-Examples/hello-world-next-app-bindings"
+              href="https://github.com/Webflow-Examples/hello-world-next-app/tree/v16-with-bindings"
               target="_blank"
               rel="noreferrer"
             >

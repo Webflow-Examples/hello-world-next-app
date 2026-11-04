@@ -1,4 +1,4 @@
-# CONTEXT — hello-world-next-app-bindings
+# CONTEXT — hello-world-next-app
 
 Orientation for contributors to this **Next.js + bindings** Hello World example
 for [Webflow Cloud](https://developers.webflow.com/webflow-cloud). Keep this
